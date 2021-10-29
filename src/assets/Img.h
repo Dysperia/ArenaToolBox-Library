@@ -64,6 +64,15 @@ public:
      */
     Img(QDataStream &imgData, quint16 width, quint16 height, Palette palette = Palette());
 
+    //******************************************************************************
+    // Methods
+    //******************************************************************************
+
+    /**
+     * Return true if the img has an integrated palette
+     */
+    [[nodiscard]] bool hasIntegratedPalette();
+
     //**************************************************************************
     // Static Methods
     //**************************************************************************

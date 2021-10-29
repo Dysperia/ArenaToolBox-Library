@@ -30,6 +30,13 @@ Img::Img(QDataStream &imgData, quint16 width, quint16 height, Palette palette) :
 }
 
 //******************************************************************************
+// Methods
+//******************************************************************************
+bool Img::hasIntegratedPalette() {
+    return mPaletteFlag & 1u;
+}
+
+//******************************************************************************
 // Getters/setters
 //******************************************************************************
 quint16 Img::offsetX() const {
@@ -173,8 +180,7 @@ void Img::initFromStreamAndPalette(QDataStream &imgDataStream, Palette palette, 
     }
     // palette setup. Integrated preferred if exists
     if (!mQImage.isNull()) {
-        bool paletteIntegrated = mPaletteFlag & 1u;
-        if (paletteIntegrated) {
+        if (hasIntegratedPalette()) {
             bool streamLongEnough = isStreamAtLeastThisSize(imgDataStream, 768);
             if (streamLongEnough) {
                 QVector<char> paletteDescription(768);
