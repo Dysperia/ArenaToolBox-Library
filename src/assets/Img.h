@@ -71,7 +71,7 @@ public:
     /**
      * Return true if the img has an integrated palette
      */
-    [[nodiscard]] bool hasIntegratedPalette();
+    [[nodiscard]] bool hasIntegratedPalette() const;
 
     //**************************************************************************
     // Static Methods

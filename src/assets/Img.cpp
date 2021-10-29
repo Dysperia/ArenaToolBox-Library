@@ -32,7 +32,7 @@ Img::Img(QDataStream &imgData, quint16 width, quint16 height, Palette palette) :
 //******************************************************************************
 // Methods
 //******************************************************************************
-bool Img::hasIntegratedPalette() {
+bool Img::hasIntegratedPalette() const {
     return mPaletteFlag & 1u;
 }
 
