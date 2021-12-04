@@ -78,12 +78,6 @@ public:
 
     [[nodiscard]]QString getArchiveFileName() const;
 
-    [[nodiscard]]quint16 getFileNumber() const;
-
-    [[nodiscard]]qint64 getSize() const;
-
-    [[nodiscard]]qint64 getModifiedSize() const;
-
     [[nodiscard]]QVector<BsaFile> getFiles() const;
 
     [[nodiscard]]bool isOpened() const;
@@ -132,11 +126,12 @@ public:
     BsaFile deleteFile(const BsaFile &file);
 
     /**
-     * @brief addFile add a new file to the archive
-     * @param filePath path the new file
-     * @return the file created
+     * @brief add to (update an existing file of) the archive
+     * @param filePath path the new (updated) file
+     * @return the file created (updated)
+     * @throw Status if the filepath cannot be read or the filename is longer than 13 characters
      */
-    BsaFile addFile(const QString &filePath);
+    BsaFile addOrUpdateFile(const QString &filePath);
 
     /**
      * @brief cancel the update operation pending on a file. Nothing is done if the file is not new or updated.
@@ -145,17 +140,7 @@ public:
      * @return the file with its state restored to original or the deleted file if it was new
      * @throw Status if the file is not in the archive
      */
-    BsaFile cancelDeleteFile(const BsaFile &file);
-
-    /**
-     * @brief cancel the update operation pending on a file
-     *
-     * An invalid file is returned in case a wrong file provided, for example
-     * if the index is invalid. Noting is done if the file is not update
-     * @param file the file for which the operation has to be cancel
-     * @return the file with its state updated
-     */
-    BsaFile cancelUpdateFile(const BsaFile &file);
+    BsaFile revertChanges(const BsaFile &file);
 
     /**
      * @brief create a new empty archive
@@ -185,21 +170,6 @@ private:
     QFile mArchiveFile{};
 
     /**
-     * @brief fileNumber (bytes 1 to 2 of the archive)
-     */
-    quint16 mFileNumber{0};
-
-    /**
-     * @brief archive total size
-     */
-    qint64 mSize{0};
-
-    /**
-     * @brief archive total size including all current modifications
-     */
-    qint64 mModifiedSize{0};
-
-    /**
      * @brief List of the archive files
      */
     QVector<BsaFile> mFiles{};
@@ -213,16 +183,6 @@ private:
      * @brief file stream reading the archive file
      */
     QDataStream mReadingStream{};
-
-    /**
-     * @brief true if an archive is opened
-     */
-    bool mOpened{false};
-
-    /**
-     * @brief true if the opened archive has been modified
-     */
-    bool mModified{false};
 
     //**************************************************************************
     // Methods

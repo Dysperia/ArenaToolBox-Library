@@ -24,23 +24,7 @@ QString BsaArchive::getArchiveFileName() const {
     return QFileInfo(mArchiveFile).fileName();
 }
 
-quint16 BsaArchive::getFileNumber() const
-{
-    return mFileNumber;
-}
-
-qint64 BsaArchive::getSize() const
-{
-    return mSize;
-}
-
-qint64 BsaArchive::getModifiedSize() const
-{
-    return mModifiedSize;
-}
-
-QVector<BsaFile> BsaArchive::getFiles() const
-{
+QVector<BsaFile> BsaArchive::getFiles() const {
     return mFiles;
 }
 
@@ -48,9 +32,14 @@ bool BsaArchive::isOpened() const {
     return mOpened;
 }
 
-bool BsaArchive::isModified() const
-{
-    return mModified;
+bool BsaArchive::isModified() const {
+    return isOpened() &&
+           // new archive
+           (mReadingStream.device() == nullptr ||
+            // modified loaded bsa
+            mFiles.size() != mOriginalFileNumber ||
+            // if same size and file deleted, need a new to balance, hence modified will still be true
+            any_of(mFiles.begin(), mFiles.end(), [](const BsaFile &file) { return file.isNew() || file.updated(); }));
 }
 
 //**************************************************************************
@@ -66,26 +55,25 @@ void BsaArchive::openArchive(const QString &filePath) {
                 .arg(filePath));
     }
     // Getting total file size
-    mSize = mArchiveFile.size();
-    mModifiedSize = mSize;
+    qint64 archiveSize = mArchiveFile.size();
     mReadingStream.setDevice(&mArchiveFile);
     // Reading file number
     mArchiveFile.seek(0);
-    mReadingStream >> mFileNumber;
+    mReadingStream >> mOriginalFileNumber;
     // Reading files name and size from file table
-    int fileTableSize = FILETABLE_ENTRY_SIZE * mFileNumber;
-    mArchiveFile.seek(mSize - fileTableSize);
+    int fileTableSize = FILETABLE_ENTRY_SIZE * mOriginalFileNumber;
+    mArchiveFile.seek(archiveSize - fileTableSize);
     quint32 offset = 2;
     char name[14];
     quint32 size = 0;
-    for (quint16 i(0); i < mFileNumber; i++) {
+    for (quint16 i(0); i < mOriginalFileNumber; i++) {
         if (mArchiveFile.atEnd()) {
-            return Status(-1, QString("Reached end of file while reading infos of file %1 of %2")
-                         .arg(i+1).arg(mFileNumber));
+            throw Status(-1, QString("Reached end of file while reading infos of file %1 of %2")
+                    .arg(i + 1).arg(mOriginalFileNumber));
         }
         if (mReadingStream.readRawData(&name[0], 14) < 14) {
-            return Status(-1, QString("Could not read file name of file %1 of %2")
-                         .arg(i+1).arg(mFileNumber));
+            throw Status(-1, QString("Could not read file name of file %1 of %2")
+                    .arg(i + 1).arg(mOriginalFileNumber));
         }
         mReadingStream >> size;
         mFiles.append(BsaFile(size, offset, QString(&name[0])));
@@ -96,9 +84,9 @@ void BsaArchive::openArchive(const QString &filePath) {
     auto totalSizeFromFiles = QtConcurrent::blockingMappedReduced<qint64>(
             mFiles, &BsaFile::size, sizeReduce);
     totalSizeFromFiles += 2 + fileTableSize;
-    if (totalSizeFromFiles != mSize) {
-        return Status(-1, QString("The archive seems corrupted (actual size : %1, expected size : %2")
-                     .arg(mSize).arg(totalSizeFromFiles));
+    if (totalSizeFromFiles != archiveSize) {
+        throw Status(-1, QString("The archive seems corrupted (actual size : %1, expected size : %2")
+                .arg(archiveSize).arg(totalSizeFromFiles));
     }
     // Sorting file list by name
     sort(mFiles.begin(), mFiles.end());
@@ -108,21 +96,17 @@ void BsaArchive::openArchive(const QString &filePath) {
     emit fileListModified(mFiles);
 }
 
-Status BsaArchive::closeArchive()
-{
-    if (!mOpened) {
-        return Status(-1, QStringLiteral("Cannot close : archive not opened"));
+void BsaArchive::closeArchive() {
+    if (!this->isOpened()) {
+        throw Status(-1, QStringLiteral("Cannot close : archive not opened"));
     }
     if (mArchiveFile.openMode() != QIODevice::NotOpen) {
         mArchiveFile.close();
     }
     mReadingStream.setDevice(nullptr);
-    mOpened = false;
-    mModified = false;
-    mSize = 0;
-    mModifiedSize = 0;
-    mFileNumber = 0;
     mFiles.clear();
+    mOriginalFileNumber = 0;
+    mOpened = false;
     emit fileListModified(mFiles);
     emit archiveClosed(true);
 }
@@ -180,27 +164,45 @@ BsaFile BsaArchive::deleteFile(const BsaFile &file) {
     return removedFile;
 }
 
-BsaFile BsaArchive::addFile(const QString &filePath)
-{
+BsaFile BsaArchive::addOrUpdateFile(const QString &filePath) {
     QFile newFile(filePath);
     // New file should exist and be readable for size
     if (!newFile.exists() || !newFile.open(QIODevice::ReadOnly)) {
         throw Status(-1, QString("The file %1 doesn't exist or is not readable").arg(filePath));
     }
     auto newFileSize = static_cast<quint32>(newFile.size());
+    QString newFileName = QFileInfo(newFile).fileName().toUpper();
     newFile.close();
     // Checking if file already exists in archive
     BsaFile newBsaFile(newFileSize, 2, newFileName);
     newBsaFile.setIsNew(true);
-    newBsaFile.setNewFilePath(filePath);
-    // Updating archive state
-    mFiles.append(newBsaFile);
-    mFileNumber++;
-    mModifiedSize += newFileSize;
-    mModifiedSize += FILETABLE_ENTRY_SIZE;
-    mModified = true;
-    emit fileListModified(mFiles);
-    return newBsaFile;
+    newBsaFile.setModifiedFilePath(filePath);
+    int idx = mFiles.indexOf(newBsaFile);
+    // new File
+    if (idx == -1) {
+        mFiles.append(newBsaFile);
+        sort(mFiles.begin(), mFiles.end());
+        emit fileListModified(mFiles);
+        return newBsaFile;
+    }
+        // File already exists
+    else {
+        auto &internFile = mFiles[idx];
+        // updating an already new file
+        if (internFile.isNew()) {
+            mFiles.replace(idx, newBsaFile);
+            emit fileModified(newBsaFile);
+            return newBsaFile;
+        }
+            // updating normal file
+        else {
+            internFile.setUpdated(true);
+            internFile.setModifiedFilePath(filePath);
+            internFile.setUpdateFileSize(newFileSize);
+            emit fileModified(internFile);
+            return internFile;
+        }
+    }
 }
 
 BsaFile BsaArchive::revertChanges(const BsaFile &file) {
@@ -211,60 +213,30 @@ BsaFile BsaArchive::revertChanges(const BsaFile &file) {
         return deleteFile(internFile);
     }
     // Updating file state
-    internFile.setToDelete(false);
-    // Updating archive state
-    mModifiedSize += (internFile.updated() ? internFile.updateFileSize() : internFile.size());
-    mModifiedSize += FILETABLE_ENTRY_SIZE;
-    updateIsModified();
-    emit fileModified(internFile);
-    return internFile;
-}
-
-BsaFile BsaArchive::cancelUpdateFile(const BsaFile &file)
-{
-    Status status = verifyIndexOpenOrNewErrors(file);
-    if (status.status() < 0) {
-        return BsaFile::INVALID_BSAFILE;
-    }
-    auto &internFile = mFiles[file.index()];
-    // Noting to be done if file not updated
-    if (!internFile.updated()) {
-        return internFile;
-    }
-    // Updating file state
     internFile.setUpdated(false);
-    internFile.setUpdateFilePath("");
+    internFile.setModifiedFilePath(QString());
     internFile.setUpdateFileSize(0);
-    // Updating archive state
-    mModifiedSize += internFile.size();
-    mModifiedSize -= internFile.updateFileSize();
-    updateIsModified();
     emit fileModified(internFile);
     return internFile;
 }
 
-Status BsaArchive::createNewArchive()
-{
-    if (mOpened) {
-        return Status(-1, QStringLiteral("Cannot create archive: already opened"));
+void BsaArchive::createNewArchive() {
+    if (this->isOpened()) {
+        throw Status(-1, QStringLiteral("Cannot create archive: already opened"));
     }
     // init empty archive data
     mArchiveFile.setFileName("");
-    mFileNumber = 0;
     mFiles.clear();
-    mModified = false;
-    mModifiedSize = 2;
-    mOpened = true;
     mReadingStream.setDevice(nullptr);
-    mSize = 2;
+    mOriginalFileNumber = 0;
+    mOpened = true;
     emit archiveOpened(true);
     emit fileListModified(mFiles);
 }
 
-Status BsaArchive::saveArchive(const QString &filePath)
-{
-    if (!mOpened) {
-        return Status(-1, QStringLiteral("Cannot save archive: not opened"));
+void BsaArchive::saveArchive(const QString &filePath) {
+    if (!this->isOpened()) {
+        throw Status(-1, QStringLiteral("Cannot save archive: not opened"));
     }
     QFile saveFile(filePath + ".tmp");
     if (!saveFile.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
