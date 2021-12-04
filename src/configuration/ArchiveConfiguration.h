@@ -47,15 +47,15 @@ public:
     /**
      * Read a json object and fill this configuration's fields
      * @param json from which to read the data
-     * @return the status of the operation: -1 if failure, 0 if success
+     * @throw status if error while loading the configuration files
      */
-    Status loadFromFile();
+    void loadFromFile();
     /**
      * Create the json object corresponding to this configuration
      * @param json to which write the data
-     * @return the status of the operation: -1 if failure, 0 if success
+     * @throw status if error while saving configuration to file
      */
-    [[nodiscard]] Status saveToFile() const;
+    void saveToFile() const;
 
     /**
      * @return true if a configuration exists for the given file, false otherwise

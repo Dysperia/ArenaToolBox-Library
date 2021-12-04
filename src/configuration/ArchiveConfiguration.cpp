@@ -22,9 +22,9 @@ void ArchiveConfiguration::read(const QJsonObject &json)
         mFiles.clear();
         mFiles.reserve(filesArray.size());
         for (auto && fileJson : filesArray) {
-            QJsonObject npcObject = fileJson.toObject();
+            QJsonObject fileJsonObject = fileJson.toObject();
             FileConfiguration file;
-            file.read(npcObject);
+            file.read(fileJsonObject);
             mFiles.append(file);
         }
     }
@@ -35,44 +35,40 @@ void ArchiveConfiguration::write(QJsonObject &json) const
     json["textureWidth"] = mTextureWidth;
     json["defaultPalette"] = mDefaultPaletteName;
     json["name"] = mName;
-    QJsonArray npcArray;
+    QJsonArray fileArray;
     for (const FileConfiguration &file : mFiles) {
-        QJsonObject fileJson;
-        file.write(fileJson);
-        npcArray.append(fileJson);
+        QJsonObject fileJsonObject;
+        file.write(fileJsonObject);
+        fileArray.append(fileJsonObject);
     }
-    json["files"] = npcArray;
+    json["files"] = fileArray;
 }
 
-Status ArchiveConfiguration::loadFromFile() {
+void ArchiveConfiguration::loadFromFile() {
     QString filePath("configuration/" + mName + CONFIGURATION_FILE_EXT);
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
-        return Status(-1, QString("Could not open the file in read mode : %1")
+        throw Status(-1, QString("Could not open the file in read mode : %1")
                 .arg(filePath));
     }
     QByteArray retrievedData = file.readAll();
     QJsonDocument loadDoc(QJsonDocument::fromJson(retrievedData));
     read(loadDoc.object());
-    try {
-        mDefaultPalette = Palette("configuration/" + mName + "/" + mDefaultPaletteName);
-    } catch (Status &e) {
-        return e;
-    }
-    return Status(0);
+    mDefaultPalette = Palette("configuration/" + mName + "/" + mDefaultPaletteName);
 }
 
-Status ArchiveConfiguration::saveToFile() const {
+void ArchiveConfiguration::saveToFile() const {
     QString filePath("configuration/" + mName + CONFIGURATION_FILE_EXT);
     QFile file(filePath);
-    if (!file.open(QIODevice::WriteOnly)) {
-        return Status(-1, QString("Could not open the file in write mode : %1")
+    if (!file.open(QIODevice::WriteOnly | QIODevice::Truncate)) {
+        throw Status(-1, QString("Could not open the file in write mode : %1")
                 .arg(filePath));
     }
     QJsonObject jsonData;
     write(jsonData);
-    file.write(QJsonDocument(jsonData).toJson());
-    return Status(0);
+    if (file.write(QJsonDocument(jsonData).toJson()) == -1) {
+        throw Status(-1, QString("Could not save configuration"));
+    }
 }
 
 bool ArchiveConfiguration::hasConfigurationForFile(const BsaFile &file) const {

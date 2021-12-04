@@ -1,8 +1,7 @@
-#include <utility>
 #include <utils/Compression.h>
 #include <error/Status.h>
-
 #include <assets/Img.h>
+#include <utils/StreamUtils.h>
 
 using namespace std;
 
@@ -43,48 +42,24 @@ quint16 Img::offsetX() const {
     return mOffsetX;
 }
 
-void Img::setOffsetX(const quint16 &offsetX) {
-    mOffsetX = offsetX;
-}
-
 quint16 Img::offsetY() const {
     return mOffsetY;
-}
-
-void Img::setOffsetY(const quint16 &offsetY) {
-    mOffsetY = offsetY;
 }
 
 quint16 Img::width() const {
     return mWidth;
 }
 
-void Img::setWidth(const quint16 &width) {
-    mWidth = width;
-}
-
 quint16 Img::height() const {
     return mHeight;
-}
-
-void Img::setHeight(const quint16 &height) {
-    mHeight = height;
 }
 
 quint8 Img::compressionFlag() const {
     return mCompressionFlag;
 }
 
-void Img::setCompressionFlag(const quint8 &compressionFlag) {
-    mCompressionFlag = compressionFlag;
-}
-
 quint8 Img::paletteFlag() const {
     return mPaletteFlag;
-}
-
-void Img::setPaletteFlag(const quint8 &paletteFlag) {
-    mPaletteFlag = paletteFlag;
 }
 
 Palette Img::palette() const {
@@ -93,6 +68,7 @@ Palette Img::palette() const {
 
 void Img::setPalette(const Palette &palette) {
     mPalette = palette;
+    mQImage.setColorTable(mPalette.getColorTable());
 }
 
 QImage Img::qImage() const {
@@ -112,35 +88,10 @@ void Img::validatePixelDataAndCreateImage() {
     }
 }
 
-bool Img::isStreamAtLeastThisSize(QDataStream &stream, int byteNumber) {
-    if (stream.atEnd() || stream.status() != QDataStream::Status::Ok) {
-        return false;
-    }
-    stream.startTransaction();
-    int read = stream.skipRawData(byteNumber);
-    stream.rollbackTransaction();
-    stream.resetStatus();
-    return read == byteNumber;
-}
-
-void Img::verifyStream(QDataStream &dataStream, int size) {
-    if (!isStreamAtLeastThisSize(dataStream, size)) {
-        throw Status(-1, QStringLiteral("Image data is too short"));
-    }
-}
-
-bool Img::readDataFromStream(QDataStream &imgDataStream, QVector<char> &rawData,
-                             quint16 size) {
-    if (imgDataStream.readRawData(rawData.data(), size) < 0) {
-        return false;
-    }
-    return true;
-}
-
 void Img::initFromStreamAndPalette(QDataStream &imgDataStream, Palette palette, bool noHeader) {
     try {
         if (!noHeader) {
-            verifyStream(imgDataStream, 12);
+            StreamUtils::verifyStream(imgDataStream, 12);
             imgDataStream.setByteOrder(QDataStream::LittleEndian);
             imgDataStream >> mOffsetX;
             imgDataStream >> mOffsetY;
@@ -150,24 +101,24 @@ void Img::initFromStreamAndPalette(QDataStream &imgDataStream, Palette palette, 
             imgDataStream >> mPaletteFlag;
             imgDataStream >> mRawDataSize;
         }
-        verifyStream(imgDataStream, mRawDataSize);
+        StreamUtils::verifyStream(imgDataStream, mRawDataSize);
         QVector<char> rawData(mCompressionFlag == 0x08 ? mRawDataSize - 2 : mRawDataSize);
         if (mCompressionFlag == 0x00) {
-            readDataFromStream(imgDataStream, rawData, mRawDataSize);
+            StreamUtils::readDataFromStream(imgDataStream, rawData, mRawDataSize);
             mImageData = rawData;
             validatePixelDataAndCreateImage();
         } else if (mCompressionFlag == 0x02) {
-            readDataFromStream(imgDataStream, rawData, mRawDataSize);
+            StreamUtils::readDataFromStream(imgDataStream, rawData, mRawDataSize);
             mImageData = Compression::uncompressRLEByLine(rawData, mWidth, mHeight);
             validatePixelDataAndCreateImage();
         } else if (mCompressionFlag == 0x04) {
-            readDataFromStream(imgDataStream, rawData, mRawDataSize);
+            StreamUtils::readDataFromStream(imgDataStream, rawData, mRawDataSize);
             mImageData = Compression::uncompressLZSS(rawData);
             validatePixelDataAndCreateImage();
         } else if (mCompressionFlag == 0x08) {
             quint16 uncompressedSize = 0;
             imgDataStream >> uncompressedSize;
-            readDataFromStream(imgDataStream, rawData, mRawDataSize - 2);
+            StreamUtils::readDataFromStream(imgDataStream, rawData, mRawDataSize - 2);
             mImageData = Compression::uncompressDeflate(rawData, uncompressedSize);
             validatePixelDataAndCreateImage();
         } else {
@@ -176,12 +127,12 @@ void Img::initFromStreamAndPalette(QDataStream &imgDataStream, Palette palette, 
         }
     }
     catch (Status &e) {
-        throw Status(e.status(), e.message());
+        throw Status(-1, "Unable to load img data : " + e.message());
     }
     // palette setup. Integrated preferred if exists
     if (!mQImage.isNull()) {
         if (hasIntegratedPalette()) {
-            bool streamLongEnough = isStreamAtLeastThisSize(imgDataStream, 768);
+            bool streamLongEnough = StreamUtils::isStreamAtLeastThisSize(imgDataStream, 768);
             if (streamLongEnough) {
                 QVector<char> paletteDescription(768);
                 imgDataStream.readRawData(paletteDescription.data(), 768);

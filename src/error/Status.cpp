@@ -4,26 +4,22 @@
 //**************************************************************************
 // Constructors
 //**************************************************************************
-Status::Status(const int &status, QString message):
-    mStatus(status), mMessage(move(message)), mMessageStdString(mMessage.toStdString())
-{
+Status::Status(const int &code, QString message) :
+        mCode(code), mMessage(move(message)), mMessageStdString(mMessage.toStdString()) {
 
 }
 
 //**************************************************************************
 // Getters/setters
 //**************************************************************************
-int Status::status() const
-{
-    return mStatus;
+int Status::code() const {
+    return mCode;
 }
 
-QString Status::message() const
-{
+QString Status::message() const {
     return mMessage;
 }
 
-const char* Status::what() const noexcept
-{
+const char *Status::what() const noexcept {
     return mMessageStdString.data();
 }

@@ -3,6 +3,7 @@
 #include <utils/BitsStreams.h>
 #include <assets/Cfa.h>
 #include <assets/Img.h>
+#include <utils/StreamUtils.h>
 
 //******************************************************************************
 // Constructors
@@ -19,32 +20,16 @@ quint16 Cfa::offsetX() const {
     return mOffsetX;
 }
 
-void Cfa::setOffsetX(const quint16 &offsetX) {
-    mOffsetX = offsetX;
-}
-
 quint16 Cfa::offsetY() const {
     return mOffsetY;
-}
-
-void Cfa::setOffsetY(const quint16 &offsetY) {
-    mOffsetY = offsetY;
 }
 
 quint16 Cfa::width() const {
     return mWidth;
 }
 
-void Cfa::setWidth(const quint16 &width) {
-    mWidth = width;
-}
-
 quint16 Cfa::height() const {
     return mHeight;
-}
-
-void Cfa::setHeight(const quint16 &height) {
-    mHeight = height;
 }
 
 Palette Cfa::palette() const {
@@ -53,6 +38,9 @@ Palette Cfa::palette() const {
 
 void Cfa::setPalette(const Palette &palette) {
     mPalette = palette;
+    for (auto &qimg : mQImages) {
+        qimg.setColorTable(mPalette.getColorTable());
+    }
 }
 
 QVector<QImage> Cfa::qImages() const {
@@ -65,7 +53,7 @@ QVector<QImage> Cfa::qImages() const {
 void Cfa::initFromStreamAndPalette(QDataStream &dataStream, const quint16 &dataSize) {
     try {
         // reading header
-        Img::verifyStream(dataStream, 14);
+        StreamUtils::verifyStream(dataStream, 14);
         dataStream.setByteOrder(QDataStream::LittleEndian);
         quint8 bitsPerPixel, frameNumber;
         quint16 compressedWidth, totalHeaderSize, totalFileSize;
@@ -77,7 +65,7 @@ void Cfa::initFromStreamAndPalette(QDataStream &dataStream, const quint16 &dataS
         dataStream >> bitsPerPixel;
         dataStream >> frameNumber;
         dataStream >> totalHeaderSize;
-        Img::verifyStream(dataStream, totalHeaderSize - 14);
+        StreamUtils::verifyStream(dataStream, totalHeaderSize - 14);
         QVector<quint16> frameDataOffsets;
         frameDataOffsets.push_back(totalHeaderSize);
         for (int frameIndex = 1; frameIndex < frameNumber; ++frameIndex) {
@@ -99,7 +87,7 @@ void Cfa::initFromStreamAndPalette(QDataStream &dataStream, const quint16 &dataS
         for (int frameIndex = 0; frameIndex < frameNumber; ++frameIndex) {
             // reading and uncompressing frame data
             quint16 compressedFrameDataSize = frameDataOffsets[frameIndex + 1] - frameDataOffsets[frameIndex];
-            Img::verifyStream(dataStream, compressedFrameDataSize);
+            StreamUtils::verifyStream(dataStream, compressedFrameDataSize);
             QVector<char> compressedFrameData(compressedFrameDataSize);
             dataStream.readRawData(compressedFrameData.data(), compressedFrameDataSize);
             // RLE uncompression

@@ -4,8 +4,7 @@
 //**************************************************************************
 // Constructor
 //**************************************************************************
-ApplicationConfiguration::ApplicationConfiguration(): QSettings("ArenaToolBox", "BSATool")
-{
+ApplicationConfiguration::ApplicationConfiguration() : QSettings("ArenaToolBox", "BSATool") {
 
 }
 

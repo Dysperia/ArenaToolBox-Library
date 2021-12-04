@@ -38,27 +38,40 @@ public:
     /**
      * @brief constructor of Dfa
      * @param data data of the file
+     * @throw Status if the cfa could not be loaded correctly
      */
     explicit Dfa(const QVector<char> &data, Palette palette = Palette());
 
     //**************************************************************************
     // Getters/setters
     //**************************************************************************
+    /**
+     * @brief offset X used to draw the image at the correct position on screen
+     */
     [[nodiscard]] quint16 offsetX() const;
-    void setOffsetX(const quint16 &offsetX);
-
+    /**
+     * @brief offset Y used to draw the image at the correct position on screen
+     */
     [[nodiscard]] quint16 offsetY() const;
-    void setOffsetY(const quint16 &offsetY);
-
+    /**
+     * @brief width of the image
+     */
     [[nodiscard]] quint16 width() const;
-    void setWidth(const quint16 &width);
-
+    /**
+     * @brief height of the image
+     */
     [[nodiscard]] quint16 height() const;
-    void setHeight(const quint16 &height);
-
+    /**
+     * @brief color palette
+     */
     [[nodiscard]] Palette palette() const;
+    /**
+     * @brief set the color palette and update the qImage frame to use it
+     */
     void setPalette(const Palette &palette);
-
+    /**
+     * @brief QImage versions of this animation's frames, mainly used for display
+     */
     [[nodiscard]] QVector<QImage> qImages() const;
 
 private:
@@ -100,6 +113,7 @@ private:
     /**
      * Init animation from the given stream and palette
      * @param stream containing animation data
+     * @throw Status if the cfa could not be loaded correctly
      */
     void initFromStreamAndPalette(QDataStream &dataStream);
 };

@@ -3,6 +3,8 @@
 #include <QFile>
 #include <assets/Palette.h>
 #include <assets/Img.h>
+#include <utils/StreamUtils.h>
+#include <utils/FileUtils.h>
 
 Palette::Palette()
 {
@@ -17,12 +19,7 @@ Palette::Palette(const QVector<char> &rgbs, bool sixBitsColor) {
 }
 
 Palette::Palette(const QString &filePath, bool sixBitsColor) {
-    QFile file(filePath);
-    if (!file.open(QIODevice::ReadOnly)) {
-        throw Status(-1, QString("Could not open the palette file in read mode : %1")
-                .arg(filePath));
-    }
-    QByteArray retrievedData = file.readAll();
+    QByteArray retrievedData = FileUtils::readDataFromFile(filePath);
     QDataStream imgDataStream(retrievedData);
     // header skip
     if (imgDataStream.skipRawData(8) != 8) {
@@ -38,7 +35,7 @@ QVector<QRgb> Palette::getColorTable() const
 }
 
 void Palette::readDataFromStream(QDataStream &imgDataStream, bool sixBitsColor) {
-    if (!Img::isStreamAtLeastThisSize(imgDataStream, 768)) {
+    if (!StreamUtils::isStreamAtLeastThisSize(imgDataStream, 768)) {
         throw Status(-1, QStringLiteral("Palette description does not contain 256 colors"));
     }
     mColorTable.clear();

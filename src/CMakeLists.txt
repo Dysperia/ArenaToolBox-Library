@@ -31,9 +31,11 @@ set(ArenaToolBox_HEADERS
         designpatterns/Singleton.h
         error/Status.h
         utils/Compression.h
+        utils/FileUtils.h
         utils/HuffmanTree.h
         utils/BitsStreams.h
-        utils/SlidingWindow.h)
+        utils/SlidingWindow.h
+        utils/StreamUtils.h)
 
 # Build library
 add_library(ArenaToolBox STATIC ${ArenaToolBox_HEADERS} ${ArenaToolBox_SRCS})

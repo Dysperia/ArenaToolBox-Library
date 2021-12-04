@@ -49,7 +49,7 @@ public:
 public slots:
     /**
      * @brief Saved the given string as the last used archive configuration name
-     * @param lastLoadedArchConf the confuguration name to save in this setting
+     * @param lastLoadedArchConf the configuration name to save in this setting
      */
     void setLastLoadedArchConf(const QString &lastLoadedArchConf);
 };

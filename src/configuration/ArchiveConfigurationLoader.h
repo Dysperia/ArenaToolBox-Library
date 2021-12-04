@@ -29,17 +29,19 @@ public slots:
     // Slots
     //**************************************************************************
     /**
-     * Load a configuration from the given name
+     * Load a configuration from the given name and set it as current
      * @param name of the configuration
-     * @return the status of the operation: -1 if failure, 0 if success
+     * @return the current configuration
+     * @throw status if the given configuration cannot be loaded
      */
-    Status loadConfiguration(const QString &name);
+    const ArchiveConfiguration &loadConfiguration(const QString &name);
 
     /**
      * Update existing configuration list
-     * @return the status of the operation: -1 if failure, 0 if success
+     * @return the configuration list
+     * @throw status if the configuration cannot be loaded
      */
-    Status updateConfigurationList();
+    const QStringList &updateConfigurationList();
 
 private:
     //**************************************************************************
@@ -53,10 +55,6 @@ private:
      * @brief list of existing configuration
      */
     QStringList mConfigurationList;
-    /**
-     * @brief default palette
-     */
-    QString defaultPalette;
 };
 
 

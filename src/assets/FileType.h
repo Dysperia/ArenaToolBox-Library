@@ -22,17 +22,13 @@ public:
     // Methods
     //**************************************************************************
     /**
-     * @brief get the description from a file extension.
-     *
-     * The search is not case-sensitive. If the extension is unknown, an empty
-     * string is return
+     * @brief get the description from a file extension. If the extension is unknown, an empty string is return
      * @param ext extension
      * @return the description
      */
     static QString getDescriptionForExtension(FileType::Extension extension);
     /**
      * @brief return the type of a file
-     *
      * @param file the file
      * @return the extension if known, UNKNOWN otherwise
      */

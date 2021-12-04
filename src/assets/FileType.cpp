@@ -42,40 +42,41 @@ QString FileType::getDescriptionForExtension(const FileType::Extension extension
 
 FileType::Extension FileType::getExtension(const BsaFile &file)
 {
-    if (file.getExtension().compare("CFA", Qt::CaseInsensitive) == 0) {
+    const QString &ext = file.getExtension();
+    if (ext.compare("CFA", Qt::CaseInsensitive) == 0) {
         return Extension::CFA;
     }
-    else if (file.getExtension().compare("IMG", Qt::CaseInsensitive) == 0) {
+    else if (ext.compare("IMG", Qt::CaseInsensitive) == 0) {
         return Extension::IMG;
     }
-    else if (file.getExtension().compare("CIF", Qt::CaseInsensitive) == 0) {
+    else if (ext.compare("CIF", Qt::CaseInsensitive) == 0) {
         return Extension::CIF;
     }
-    else if (file.getExtension().compare("INF", Qt::CaseInsensitive) == 0) {
+    else if (ext.compare("INF", Qt::CaseInsensitive) == 0) {
         return Extension::INF;
     }
-    else if (file.getExtension().compare("XFM", Qt::CaseInsensitive) == 0) {
+    else if (ext.compare("XFM", Qt::CaseInsensitive) == 0) {
         return Extension::XFM;
     }
-    else if (file.getExtension().compare("XMI", Qt::CaseInsensitive) == 0) {
+    else if (ext.compare("XMI", Qt::CaseInsensitive) == 0) {
         return Extension::XMI;
     }
-    else if (file.getExtension().compare("VOC", Qt::CaseInsensitive) == 0) {
+    else if (ext.compare("VOC", Qt::CaseInsensitive) == 0) {
         return Extension::VOC;
     }
-    else if (file.getExtension().compare("DFA", Qt::CaseInsensitive) == 0) {
+    else if (ext.compare("DFA", Qt::CaseInsensitive) == 0) {
         return Extension::DFA;
     }
-    else if (file.getExtension().compare("MIF", Qt::CaseInsensitive) == 0) {
+    else if (ext.compare("MIF", Qt::CaseInsensitive) == 0) {
         return Extension::MIF;
     }
-    else if (file.getExtension().compare("SET", Qt::CaseInsensitive) == 0) {
+    else if (ext.compare("SET", Qt::CaseInsensitive) == 0) {
         return Extension::SET;
     }
-    else if (file.getExtension().compare("TXT", Qt::CaseInsensitive) == 0) {
+    else if (ext.compare("TXT", Qt::CaseInsensitive) == 0) {
         return Extension::TXT;
     }
-    else if (file.getExtension().compare("RMD", Qt::CaseInsensitive) == 0) {
+    else if (ext.compare("RMD", Qt::CaseInsensitive) == 0) {
         return Extension::RMD;
     }
     else {return Extension::UNKNOWN;}

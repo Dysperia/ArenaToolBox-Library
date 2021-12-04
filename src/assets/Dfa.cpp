@@ -1,6 +1,7 @@
 #include <utils/Compression.h>
 #include <assets/Dfa.h>
 #include <error/Status.h>
+#include <utils/StreamUtils.h>
 
 using namespace std;
 
@@ -19,32 +20,16 @@ quint16 Dfa::offsetX() const {
     return mOffsetX;
 }
 
-void Dfa::setOffsetX(const quint16 &offsetX) {
-    mOffsetX = offsetX;
-}
-
 quint16 Dfa::offsetY() const {
     return mOffsetY;
-}
-
-void Dfa::setOffsetY(const quint16 &offsetY) {
-    mOffsetY = offsetY;
 }
 
 quint16 Dfa::width() const {
     return mWidth;
 }
 
-void Dfa::setWidth(const quint16 &width) {
-    mWidth = width;
-}
-
 quint16 Dfa::height() const {
     return mHeight;
-}
-
-void Dfa::setHeight(const quint16 &height) {
-    mHeight = height;
 }
 
 Palette Dfa::palette() const {
@@ -53,6 +38,9 @@ Palette Dfa::palette() const {
 
 void Dfa::setPalette(const Palette &palette) {
     mPalette = palette;
+    for (auto &qimg : mQImages) {
+        qimg.setColorTable(mPalette.getColorTable());
+    }
 }
 
 QVector<QImage> Dfa::qImages() const {
@@ -65,7 +53,7 @@ QVector<QImage> Dfa::qImages() const {
 void Dfa::initFromStreamAndPalette(QDataStream &dataStream) {
     try {
         // reading header
-        Img::verifyStream(dataStream, 12);
+        StreamUtils::verifyStream(dataStream, 12);
         dataStream.setByteOrder(QDataStream::LittleEndian);
         quint16 frameCount, firstFrameDataSize;
         dataStream >> frameCount;
@@ -76,7 +64,7 @@ void Dfa::initFromStreamAndPalette(QDataStream &dataStream) {
         // reading first frame
         dataStream >> firstFrameDataSize;
         QVector<char> firstFrameCompressedData(firstFrameDataSize);
-        Img::verifyStream(dataStream, firstFrameDataSize);
+        StreamUtils::verifyStream(dataStream, firstFrameDataSize);
         dataStream.readRawData(firstFrameCompressedData.data(), firstFrameDataSize);
         const QVector<char> firstFrameData = Compression::uncompressRLE(firstFrameCompressedData, mWidth * mHeight);
         mFramesData.push_back(firstFrameData);
@@ -86,10 +74,10 @@ void Dfa::initFromStreamAndPalette(QDataStream &dataStream) {
             copy(firstFrameData.begin(), firstFrameData.end(), mFramesData.last().begin());
         }
         for (int frameIndex = 1; frameIndex < frameCount; ++frameIndex) {
-            Img::verifyStream(dataStream, 2);
+            StreamUtils::verifyStream(dataStream, 2);
             quint16 differentialSize, chunkCount;
             dataStream >> differentialSize;
-            Img::verifyStream(dataStream, differentialSize);
+            StreamUtils::verifyStream(dataStream, differentialSize);
             dataStream >> chunkCount;
             auto &frame = mFramesData[frameIndex];
             // reading frame chunks
@@ -112,6 +100,5 @@ void Dfa::initFromStreamAndPalette(QDataStream &dataStream) {
     }
     catch (Status &e) {
         throw Status(-1, "Unable to load dfa data : " + e.message());
-        return;
     }
 }

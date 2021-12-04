@@ -32,24 +32,32 @@ public:
      * @brief Palette constructor. Extract a palette from the given data
      * @param rgbs palette description given as 256 RGB triplet (hence 768 length vector)
      * @param sixBitsColor colors are expected to be coded on 6 bits if true, 8 bits otherwise. False by default
+     * @throw Status if the palette could not be loaded correctly
      */
     explicit Palette(const QVector<char> &rgbs, bool sixBitsColor = false);
     /**
      * @brief Palette constructor. Extract a palette from the given file
      * @param filePath to the palette description file
      * @param sixBitsColor colors are expected to be coded on 6 bits if true, 8 bits otherwise. False by default
+     * @throw Status if the palette could not be loaded correctly
      */
     explicit Palette(const QString &filePath, bool sixBitsColor = false);
 
     //**************************************************************************
     // Getters/setters
     //**************************************************************************
+    /**
+     * Color table
+     */
     [[nodiscard]] QVector<QRgb> getColorTable() const;
 
 private:
     //**************************************************************************
     // Attributes
     //**************************************************************************
+    /**
+     * Color table
+     */
     QVector<QRgb> mColorTable{};
 
     //**************************************************************************

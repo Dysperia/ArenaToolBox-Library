@@ -12,19 +12,19 @@ ArchiveConfigurationLoader::ArchiveConfigurationLoader() {
 //**************************************************************************
 // Methods
 //**************************************************************************
-Status ArchiveConfigurationLoader::loadConfiguration(const QString &name) {
+const ArchiveConfiguration &ArchiveConfigurationLoader::loadConfiguration(const QString &name) {
     ArchiveConfiguration archive;
     archive.setName(name);
-    const Status &status = archive.loadFromFile();
+    archive.loadFromFile();
     mCurrent = archive;
-    return status;
+    return mCurrent;
 }
 
-Status ArchiveConfigurationLoader::updateConfigurationList() {
+const QStringList &ArchiveConfigurationLoader::updateConfigurationList() {
     QString dirPath("configuration/");
     QDir confDir(dirPath);
-    if (!confDir.exists() && confDir.mkdir(dirPath)) {
-        return Status(-1, QString("Could not access / create the configuration directory"));
+    if (!confDir.mkdir(dirPath)) {
+        throw Status(-1, QString("Could not access / create the configuration directory"));
     }
     QStringList fileList = confDir.entryList({"*" + ArchiveConfiguration::CONFIGURATION_FILE_EXT}, QDir::Filter::Files, QDir::SortFlag::Name);
     mConfigurationList.clear();
@@ -32,7 +32,7 @@ Status ArchiveConfigurationLoader::updateConfigurationList() {
         int idx = filename.lastIndexOf(ArchiveConfiguration::CONFIGURATION_FILE_EXT);
         mConfigurationList.push_back(filename.left(idx));
     }
-    return Status(0);
+    return mConfigurationList;
 }
 
 //**************************************************************************

@@ -38,7 +38,7 @@ private:
     // Attributes
     //**************************************************************************
     /**
-     * Source from which read bits
+     * Source from which read bits. Ensure that the destination is readable when using the reader
      */
     deque<char> &mSource;
     /**
@@ -58,6 +58,7 @@ public:
      * Extract the front byte of the deque as an unsigned byte and remove it from the deque
      * @param source data from which extract the front byte
      * @return the next unsigned byte
+     * @throw Status if source is empty
      */
     static uchar getNextUnsignedByte(deque<char> &source);
 
@@ -65,6 +66,7 @@ public:
      * Extract the front byte of the deque and remove it from the deque
      * @param source data from which extract the front byte
      * @return the next byte
+     * @throw Status if source is empty
      */
     static char getNextByte(deque<char> &source);
 
@@ -96,8 +98,10 @@ public:
     [[nodiscard]] quint8 getRemainingBits() const;
     /**
      * Get new bits from the source if needed and return bits. This method ensure that at least the 8 highest bits are
-     * usable. Refer to getRemainingBits() to know how many bits are usable
-     * @return the bits
+     * usable. Refer to getRemainingBits() to know how many bits are usable.
+     * If less than eight bits are remaining, new data is read from the source and added. If the source is empty, zeros
+     * are added
+     * @return the next eight bits
      */
     quint8 getBits();
 };
@@ -132,7 +136,7 @@ public:
     // Constructors
     //**************************************************************************
     /**
-     * construct a reader from the given source
+     * construct a reader from the given source. Ensure that the destination is writable when using the writer
      * @param destination destination to which write the bits
      */
     explicit BitsWriter(QVector<char> &destination);

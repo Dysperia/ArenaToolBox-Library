@@ -15,7 +15,7 @@
  * - Compression flags : 1 byte
  * - Palette flags : 1 byte
  * - Image data size : 2 bytes
- * Then follows the image data and after the palette data if any
+ * Then follows the image data and, after, the palette data if any
  */
 class Img
 {
@@ -33,6 +33,7 @@ public:
      * QImage
      * @param imgData data of the IMG file
      * @param palette palette used to display the IMG
+     * @throw Status if the img could not be loaded correctly
      */
     explicit Img(const QVector<char> &imgData, Palette palette = Palette());
     /**
@@ -41,6 +42,7 @@ public:
      * QImage
      * @param imgData data of the IMG file. The stream will advance
      * @param palette palette used to display the IMG
+     * @throw Status if the img could not be loaded correctly
      */
     explicit Img(QDataStream &imgData, Palette palette = Palette());
     /**
@@ -51,6 +53,7 @@ public:
      * @param width of the IMG file
      * @param height of the IMG file
      * @param palette palette used to display the IMG
+     * @throw Status if the img could not be loaded correctly
      */
     Img(const QVector<char> &imgData, quint16 width, quint16 height, Palette palette = Palette());
     /**
@@ -61,6 +64,7 @@ public:
      * @param width of the IMG file
      * @param height of the IMG file
      * @param palette palette used to display the IMG
+     * @throw Status if the img could not be loaded correctly
      */
     Img(QDataStream &imgData, quint16 width, quint16 height, Palette palette = Palette());
 
@@ -74,54 +78,43 @@ public:
     [[nodiscard]] bool hasIntegratedPalette() const;
 
     //**************************************************************************
-    // Static Methods
-    //**************************************************************************
-    /**
-     * Validate the length of the stream
-     * @param stream to check
-     * @return true if the stream is at least this size
-     */
-    static bool isStreamAtLeastThisSize(QDataStream &stream, int byteNumber);
-    /**
-     * Validate the length of the stream and throw a Status instance if not long enough
-     * @param stream to check
-     * @throw Status if not long enough
-     */
-    static void verifyStream(QDataStream &stream, int byteNumber);
-
-    /**
-     * Read data from stream and log an error if the operation is not a success
-     * @param imgDataStream stream to read
-     * @param rawData data destination
-     * @param size byte number to read
-     * @return true if success, false otherwise
-     */
-    static bool readDataFromStream(QDataStream &imgDataStream, QVector<char> &rawData, quint16 size);
-
-    //**************************************************************************
     // Getters/setters
     //**************************************************************************
+    /**
+     * @brief offset X used to draw the image at the correct position on screen
+     */
     [[nodiscard]] quint16 offsetX() const;
-    void setOffsetX(const quint16 &offsetX);
-
+    /**
+     * @brief offset Y used to draw the image at the correct position on screen
+     */
     [[nodiscard]] quint16 offsetY() const;
-    void setOffsetY(const quint16 &offsetY);
-
+    /**
+     * @brief width of the image
+     */
     [[nodiscard]] quint16 width() const;
-    void setWidth(const quint16 &width);
-
+    /**
+     * @brief height of the image
+     */
     [[nodiscard]] quint16 height() const;
-    void setHeight(const quint16 &height);
-
+    /**
+     * @brief compression flag
+     */
     [[nodiscard]] quint8 compressionFlag() const;
-    void setCompressionFlag(const quint8 &compressionFlag);
-
+    /**
+     * @brief palette flag
+     */
     [[nodiscard]] quint8 paletteFlag() const;
-    void setPaletteFlag(const quint8 &paletteFlag);
-
+    /**
+     * @brief color palette
+     */
     [[nodiscard]] Palette palette() const;
+    /**
+     * @brief set the color palette and update the qImage frame to use it
+     */
     void setPalette(const Palette &palette);
-
+    /**
+     * @brief QImage version of this img, mainly used for display
+     */
     [[nodiscard]] QImage qImage() const;
 
 private:
@@ -175,6 +168,7 @@ private:
     /**
      * Validate image data by comparing pixel number and image size (height * width). If validation passed, a non null
      * QImage is created
+     * @throw Status if image data is not of expected size
      */
     void validatePixelDataAndCreateImage();
 
@@ -185,6 +179,7 @@ private:
      * @param stream containing image data. The stream will advance
      * @param palette color table to use
      * @param noHeader true if data has no header to read
+     * @throw Status if could not be loaded correctly
      */
     void initFromStreamAndPalette(QDataStream &imgDataStream, Palette palette, bool noHeader = false);
 };
