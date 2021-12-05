@@ -8,6 +8,12 @@
 
 class ArchiveConfigurationLoader : public QObject {
 Q_OBJECT
+signals:
+    /**
+     * @brief signal sent when a configuration is loaded
+     * @param name configuration name
+     */
+    void configurationLoaded(QString name);
 public:
     //**************************************************************************
     // Constructors

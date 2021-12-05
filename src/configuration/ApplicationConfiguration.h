@@ -6,9 +6,7 @@
 /**
  * @brief This class is used to describe and persist user application settings
  */
-class ApplicationConfiguration : public QSettings
-{
-    Q_OBJECT
+class ApplicationConfiguration : public QSettings {
 public:
     //**************************************************************************
     // statics
@@ -35,18 +33,19 @@ public:
      * @return the last saved path if exists or the path to the home folder
      */
     [[nodiscard]] QString getLastOpenedBsa() const;
+
     /**
      * @brief Saved the given path as the last opened bsa
      * @param lastOpenedBsa the path to the folder to save in this setting
      */
     void setLastOpenedBsa(const QString &lastOpenedBsa);
+
     /**
      * @brief Return the existing setting or a default value for the name of the last used archive configuration name
      * @return the last used archive configuration name if exists or ARENA
      */
     [[nodiscard]] QString getLastLoadedArchConf() const;
 
-public slots:
     /**
      * @brief Saved the given string as the last used archive configuration name
      * @param lastLoadedArchConf the configuration name to save in this setting

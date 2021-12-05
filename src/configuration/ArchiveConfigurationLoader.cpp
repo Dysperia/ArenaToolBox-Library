@@ -17,6 +17,7 @@ const ArchiveConfiguration &ArchiveConfigurationLoader::loadConfiguration(const 
     archive.setName(name);
     archive.loadFromFile();
     mCurrent = archive;
+    emit configurationLoaded(name);
     return mCurrent;
 }
 
