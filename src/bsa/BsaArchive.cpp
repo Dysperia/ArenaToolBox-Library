@@ -42,6 +42,19 @@ bool BsaArchive::isModified() const {
             any_of(mFiles.begin(), mFiles.end(), [](const BsaFile &file) { return file.isNew() || file.updated(); }));
 }
 
+qint64 BsaArchive::size() const {
+    auto sizeReduce = [](qint64 &result, const qint64 &current) -> void { result += current; };
+    std::function<qint64(const BsaFile &current)> sizeMap = [](const BsaFile &current) {
+        return qint64(current.updated() ? current.updateFileSize() : current.size());
+    };
+    return QtConcurrent::blockingMappedReduced<qint64>(
+            mFiles, sizeMap, sizeReduce);
+}
+
+quint16 BsaArchive::fileNumber() const {
+    return mFiles.size();
+}
+
 //**************************************************************************
 // Methods
 //**************************************************************************
@@ -54,19 +67,19 @@ void BsaArchive::openArchive(const QString &filePath) {
         throw Status(-1, QString("Could not open the file in read mode : %1")
                 .arg(filePath));
     }
-    // Getting total file size
+    // Getting total file fileSize
     qint64 archiveSize = mArchiveFile.size();
-    mReadingStream.setDevice(&mArchiveFile);
     // Reading file number
+    mReadingStream.setDevice(&mArchiveFile);
     mArchiveFile.seek(0);
     mReadingStream >> mOriginalFileNumber;
-    // Reading files name and size from file table
+    // Reading files name and fileSize from file table
     int fileTableSize = FILETABLE_ENTRY_SIZE * mOriginalFileNumber;
     mArchiveFile.seek(archiveSize - fileTableSize);
     quint32 offset = 2;
     char name[14];
-    quint32 size = 0;
     for (quint16 i(0); i < mOriginalFileNumber; i++) {
+        quint32 fileSize = 0;
         if (mArchiveFile.atEnd()) {
             throw Status(-1, QString("Reached end of file while reading infos of file %1 of %2")
                     .arg(i + 1).arg(mOriginalFileNumber));
@@ -75,17 +88,15 @@ void BsaArchive::openArchive(const QString &filePath) {
             throw Status(-1, QString("Could not read file name of file %1 of %2")
                     .arg(i + 1).arg(mOriginalFileNumber));
         }
-        mReadingStream >> size;
-        mFiles.append(BsaFile(size, offset, QString(&name[0])));
-        offset += size;
+        mReadingStream >> fileSize;
+        mFiles.append(BsaFile(fileSize, offset, QString(&name[0])));
+        offset += fileSize;
     }
-    // Checking archive size and integrity
-    auto sizeReduce = [](qint64 &result, const qint64 &current) -> void { result += current; };
-    auto totalSizeFromFiles = QtConcurrent::blockingMappedReduced<qint64>(
-            mFiles, &BsaFile::size, sizeReduce);
+    // Checking archive fileSize and integrity
+    auto totalSizeFromFiles = size();
     totalSizeFromFiles += 2 + fileTableSize;
     if (totalSizeFromFiles != archiveSize) {
-        throw Status(-1, QString("The archive seems corrupted (actual size : %1, expected size : %2")
+        throw Status(-1, QString("The archive seems corrupted (actual fileSize : %1, expected fileSize : %2")
                 .arg(archiveSize).arg(totalSizeFromFiles));
     }
     // Sorting file list by name

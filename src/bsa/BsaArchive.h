@@ -84,6 +84,10 @@ public:
 
     [[nodiscard]]bool isModified() const;
 
+    [[nodiscard]]qint64 size() const;
+
+    [[nodiscard]]quint16 fileNumber() const;
+
     //**************************************************************************
     // Methods
     //**************************************************************************

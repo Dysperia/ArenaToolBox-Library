@@ -13,8 +13,10 @@ set(ArenaToolBox_SRCS
         configuration/FileConfiguration.cpp
         error/Status.cpp
         utils/Compression.cpp
+        utils/FileUtils.cpp
         utils/HuffmanTree.cpp
-        utils/BitsStreams.cpp)
+        utils/BitsStreams.cpp
+        utils/StreamUtils.cpp)
 
 set(ArenaToolBox_HEADERS
         assets/FileType.h

@@ -23,7 +23,7 @@ const ArchiveConfiguration &ArchiveConfigurationLoader::loadConfiguration(const 
 const QStringList &ArchiveConfigurationLoader::updateConfigurationList() {
     QString dirPath("configuration/");
     QDir confDir(dirPath);
-    if (!confDir.mkdir(dirPath)) {
+    if (!confDir.exists() && !confDir.mkdir(dirPath)) {
         throw Status(-1, QString("Could not access / create the configuration directory"));
     }
     QStringList fileList = confDir.entryList({"*" + ArchiveConfiguration::CONFIGURATION_FILE_EXT}, QDir::Filter::Files, QDir::SortFlag::Name);
