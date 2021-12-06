@@ -34,11 +34,7 @@ bool BsaArchive::isOpened() const {
 
 bool BsaArchive::isModified() const {
     return isOpened() &&
-           // new archive
-           (mReadingStream.device() == nullptr ||
-            // modified loaded bsa
-            mFiles.size() != mOriginalFileNumber ||
-            // if same size and file deleted, need a new to balance, hence modified will still be true
+           (mFiles.size() != mOriginalFileNumber ||
             any_of(mFiles.begin(), mFiles.end(), [](const BsaFile &file) { return file.isNew() || file.updated(); }));
 }
 
